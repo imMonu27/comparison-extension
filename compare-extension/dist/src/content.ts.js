@@ -1,0 +1,263 @@
+const STORAGE_KEY = "comparisonProperties";
+const MAX_SAVED_PROPERTIES = 40;
+const DEBUG = true;
+const cleanText = (value) => value?.replace(/\s+/g, " ").trim() ?? "";
+const debugLog = (message, details) => {
+	if (DEBUG) {
+		console.info(`[Property Compare] ${message}`, details ?? "");
+	}
+};
+const isPropertyComPage = () => ["property.com.au", "www.property.com.au"].includes(location.hostname);
+const normalizeUrl = (href) => {
+	try {
+		const url = new URL(href, location.origin);
+		url.hash = "";
+		url.search = "";
+		return url.href;
+	} catch {
+		return location.href;
+	}
+};
+const makeId = (value) => value.toLowerCase().replace(/^https?:\/\//, "").replace(/[^\w-]+/g, "-");
+const pageText = () => cleanText(document.body.innerText);
+const propertyDetailSignals = () => {
+	const text = pageText().toLowerCase();
+	return [
+		"estimated value",
+		"estimated cost",
+		"property value",
+		"bedroom",
+		"bathroom",
+		"car space",
+		"parking",
+		"land size",
+		"floor area",
+		"building size",
+		"government planning overlays",
+		"planning overlays",
+		"year built"
+	].filter((signal) => text.includes(signal));
+};
+const profileReadiness = () => {
+	const path = location.pathname.toLowerCase();
+	const isHomeOrSearch = path === "/" || path.includes("/search") || path.includes("/news");
+	const address = extractAddress();
+	const signals = propertyDetailSignals();
+	if (isHomeOrSearch) {
+		return {
+			isReady: false,
+			reason: "home or search page",
+			address,
+			signals
+		};
+	}
+	if (!address || address.length < 5 || !/\d/.test(address)) {
+		return {
+			isReady: false,
+			reason: "missing address",
+			address,
+			signals
+		};
+	}
+	if (signals.length === 0) {
+		return {
+			isReady: false,
+			reason: "missing profile signals",
+			address,
+			signals
+		};
+	}
+	return {
+		isReady: true,
+		reason: "ready",
+		address,
+		signals
+	};
+};
+const headingText = () => {
+	const heading = document.querySelector("h1");
+	return cleanText(heading?.textContent);
+};
+const titleFromDocument = () => {
+	const heading = headingText();
+	if (heading) {
+		return heading;
+	}
+	return cleanText(document.title.replace(/\|.*$/g, "").replace(/Property.*$/i, ""));
+};
+const extractAddress = () => {
+	const heading = headingText();
+	if (heading && /\d/.test(heading)) {
+		return heading;
+	}
+	const addressElement = Array.from(document.querySelectorAll("[data-testid*=\"address\"], [class*=\"address\"]")).map((element) => cleanText(element.textContent)).find((value) => /\d/.test(value));
+	return addressElement || titleFromDocument();
+};
+const nearbyValue = (labelPatterns) => {
+	const elements = Array.from(document.querySelectorAll("div, section, li, dl, tr, p, span"));
+	for (const element of elements) {
+		const ownText = cleanText(element.textContent);
+		if (!ownText || ownText.length > 180) {
+			continue;
+		}
+		const matchingLabel = labelPatterns.find((pattern) => pattern.test(ownText));
+		if (!matchingLabel) {
+			continue;
+		}
+		const splitValue = ownText.replace(matchingLabel, "").replace(/^[:-\s]+/, "").trim();
+		if (splitValue && splitValue.length < ownText.length) {
+			return splitValue;
+		}
+		const parentText = cleanText(element.parentElement?.textContent);
+		const siblingText = cleanText(element.nextElementSibling?.textContent);
+		if (siblingText && siblingText.length < 80) {
+			return siblingText;
+		}
+		if (parentText && parentText.length < 220) {
+			return parentText.replace(matchingLabel, "").replace(/^[:-\s]+/, "").trim();
+		}
+	}
+	return undefined;
+};
+const regexValue = (patterns) => {
+	const text = pageText();
+	for (const pattern of patterns) {
+		const match = text.match(pattern);
+		if (match?.[1]) {
+			return cleanText(match[1]);
+		}
+	}
+	return undefined;
+};
+const valueFrom = (labels, patterns) => nearbyValue(labels) || regexValue(patterns);
+const extractRawFields = () => {
+	const rawFields = {};
+	const elements = Array.from(document.querySelectorAll("li, tr, dl, div, p"));
+	elements.forEach((element) => {
+		const text = cleanText(element.textContent);
+		if (!text || text.length > 140) {
+			return;
+		}
+		const separatorMatch = text.match(/^([^:]{3,45}):\s*(.{1,80})$/);
+		if (separatorMatch) {
+			rawFields[separatorMatch[1]] = separatorMatch[2];
+		}
+	});
+	return Object.keys(rawFields).length ? rawFields : undefined;
+};
+const extractPropertyComDetails = () => ({
+	carpetSize: valueFrom([
+		/carpet size/i,
+		/floor area/i,
+		/internal area/i
+	], [/(?:carpet size|floor area|internal area)\s*[:-]?\s*([\d,.]+\s*(?:m2|m\u00b2|sqm|sq m))/i]),
+	buildingSize: valueFrom([
+		/build(?:ing)? size/i,
+		/building area/i,
+		/land size/i,
+		/property size/i
+	], [/(?:build(?:ing)? size|building area|land size|property size)\s*[:-]?\s*([\d,.]+\s*(?:m2|m\u00b2|sqm|sq m))/i]),
+	bedrooms: valueFrom([/bedrooms?/i, /\bbeds?\b/i], [/(?:bedrooms?|beds?)\s*[:-]?\s*(\d+)/i, /(\d+)\s*beds?\b/i]),
+	bathrooms: valueFrom([/bathrooms?/i, /\bbaths?\b/i], [/(?:bathrooms?|baths?)\s*[:-]?\s*(\d+)/i, /(\d+)\s*baths?\b/i]),
+	parking: valueFrom([
+		/parking/i,
+		/car spaces?/i,
+		/garage/i
+	], [/(?:parking|car spaces?|garage)\s*[:-]?\s*(\d+)/i, /(\d+)\s*(?:car spaces?|parking|garage)/i]),
+	estimatedCost: valueFrom([
+		/estimated value/i,
+		/estimated cost/i,
+		/property value/i,
+		/value estimate/i
+	], [/(?:estimated value|estimated cost|property value|value estimate)\s*[:-]?\s*(\$[\d,.]+(?:\s*-\s*\$[\d,.]+)?)/i]),
+	buildYear: valueFrom([
+		/year built/i,
+		/build year/i,
+		/built/i
+	], [/(?:year built|build year|built)\s*[:-]?\s*(\d{4})/i]),
+	propertyBoundary: valueFrom([/property boundary/i, /boundary/i], [/(?:property boundary|boundary)\s*[:-]?\s*([^.!?]{3,80})/i]),
+	governmentPlanningOverlays: valueFrom([
+		/government planning overlays/i,
+		/planning overlays/i,
+		/overlays/i
+	], [/(?:government planning overlays|planning overlays|overlays)\s*[:-]?\s*([^.!?]{3,120})/i]),
+	rawFields: extractRawFields(),
+	capturedAt: Date.now()
+});
+const getStoredProperties = () => new Promise((resolve) => {
+	chrome.storage.local.get(STORAGE_KEY, (items) => {
+		resolve(Array.isArray(items[STORAGE_KEY]) ? items[STORAGE_KEY] : []);
+	});
+});
+const saveProperty = async (property) => {
+	const existing = await getStoredProperties();
+	const matchKey = property.address.toLowerCase() || property.url;
+	const existingIndex = existing.findIndex((storedProperty) => storedProperty.url === property.url || storedProperty.address.toLowerCase() === matchKey);
+	const nextProperties = [...existing];
+	if (existingIndex >= 0) {
+		nextProperties[existingIndex] = {
+			...nextProperties[existingIndex],
+			...property,
+			sources: {
+				...nextProperties[existingIndex].sources,
+				propertyCom: property.sources.propertyCom
+			}
+		};
+	} else {
+		nextProperties.unshift(property);
+	}
+	chrome.storage.local.set({ [STORAGE_KEY]: nextProperties.sort((a, b) => b.savedAt - a.savedAt).slice(0, MAX_SAVED_PROPERTIES) }, () => {
+		debugLog("saved property profile", {
+			address: property.address,
+			url: property.url,
+			total: nextProperties.length
+		});
+	});
+};
+const collectPropertyProfile = () => {
+	if (!isPropertyComPage()) {
+		debugLog("skipped capture: not property.com.au", { host: location.hostname });
+		return;
+	}
+	const readiness = profileReadiness();
+	if (!readiness.isReady) {
+		debugLog(`skipped capture: ${readiness.reason}`, {
+			path: location.pathname,
+			address: readiness.address,
+			signals: readiness.signals
+		});
+		return;
+	}
+	const url = normalizeUrl(location.href);
+	const address = readiness.address;
+	const title = titleFromDocument() || address;
+	if (!address || address.length < 5) {
+		debugLog("skipped capture: missing address after readiness check", { url });
+		return;
+	}
+	void saveProperty({
+		id: makeId(address || url),
+		title,
+		address,
+		url,
+		savedAt: Date.now(),
+		sources: { propertyCom: extractPropertyComDetails() }
+	});
+};
+let collectTimer;
+const scheduleCollection = () => {
+	window.clearTimeout(collectTimer);
+	collectTimer = window.setTimeout(collectPropertyProfile, 700);
+};
+if (isPropertyComPage()) {
+	debugLog("content script loaded", {
+		url: location.href,
+		readyState: document.readyState
+	});
+	scheduleCollection();
+	const observer = new MutationObserver(scheduleCollection);
+	observer.observe(document.body, {
+		childList: true,
+		subtree: true
+	});
+}
