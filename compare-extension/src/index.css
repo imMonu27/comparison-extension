@@ -226,3 +226,166 @@ button {
   color: #98a2b3;
   font-weight: 600;
 }
+.estimate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.estimate-card {
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  overflow: hidden;
+  background: white;
+}
+
+.estimate-header {
+  padding: 5px 10px;
+}
+
+.estimate-header h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.estimate-header small {
+  color: #666;
+}
+
+.estimate-body {
+  padding: 5px;
+  text-align: center;
+}
+
+.estimate-body.purple {
+  background: #f6ecff;
+}
+
+.estimate-body.blue {
+  background: #e9f6ff;
+}
+
+.estimate-confidence {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.estimate-body.purple .estimate-confidence {
+  color: #8a2be2;
+}
+
+.estimate-body.blue .estimate-confidence {
+  color: #0077cc;
+}
+
+.estimate-price {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.estimate-badge {
+  display: inline-block;
+  background: #e2c8ff;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.estimate-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px;
+}
+
+.estimate-footer div {
+  display: flex;
+  flex-direction: column;
+}
+
+.estimate-footer strong {
+  font-size: 20px;
+}
+
+.estimate-footer span {
+  color: #777;
+  font-size: 11px;
+}
+
+span{
+  font-size: 11px;
+}
+
+.boundary-card{
+
+  margin-top:20px;
+
+  background:white;
+
+  border-radius:16px;
+
+  padding:18px;
+
+  border:1px solid #ececec;
+
+}
+
+.boundary-header{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  margin-bottom:16px;
+
+}
+
+.boundary-svg{
+
+  width:100%;
+
+  height:320px;
+
+  background:#f8f8fb;
+
+  border-radius:12px;
+
+}
+
+.boundary-svg{
+
+  background:#f4f5f7;
+  
+  border-radius:18px;
+  
+  padding:16px;
+  
+  width:100%;
+  
+  height:320px;
+  
+  }
+
+  .boundary-card{
+    margin-top:20px;
+    border:1px solid #ececec;
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+}
+
+.boundary-header{
+    padding:12px 16px;
+    border-bottom:1px solid #eee;
+    font-weight:600;
+}
+
+.boundary-image{
+    width:100%;
+    display:block;
+}

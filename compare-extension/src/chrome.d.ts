@@ -4,14 +4,52 @@ type PropertyComDetails = {
   bedrooms?: string
   bathrooms?: string
   parking?: string
-  estimatedCost?: string
+  propertyEstimate?: PropertyEstimate
+  rentalEstimate?: RentalEstimate
   buildYear?: string
-  propertyBoundary?: string
+  propertyBoundary?: PropertyBoundary
   governmentPlanningOverlays?: string
   rawFields?: Record<string, string>
   capturedAt: number
 }
+type PropertyEstimate = {
+  confidence?: string
+  value?: string
+  pricePerSqm?: string
+  lowRange?: string
+  highRange?: string
+  updated?: string
+}
 
+type BoundaryPoint = {
+  x: number
+  y: number
+}
+
+type BoundaryMeasurement = {
+  text: string
+  x: number
+  y: number
+}
+
+type BoundaryArea = {
+  text: string
+  x: number
+  y: number
+}
+
+type PropertyBoundary = {
+  image?: string
+  
+}
+
+type RentalEstimate = {
+  confidence?: string
+  value?: string
+  lowRange?: string
+  highRange?: string
+  updated?: string
+}
 type StoredProperty = {
   id: string
   title: string

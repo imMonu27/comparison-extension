@@ -1,3 +1,5 @@
+import { scrapePropertyCom } from './scrappers/propertycom'
+
 const STORAGE_KEY = 'comparisonProperties'
 const MAX_SAVED_PROPERTIES = 40
 const DEBUG = true
@@ -22,6 +24,9 @@ const normalizeUrl = (href: string) => {
     return location.href
   }
 }
+
+
+
 
 const makeId = (value: string) => value.toLowerCase().replace(/^https?:\/\//, '').replace(/[^\w-]+/g, '-')
 
@@ -167,37 +172,6 @@ const extractRawFields = () => {
   return Object.keys(rawFields).length ? rawFields : undefined
 }
 
-const extractPropertyComDetails = (): PropertyComDetails => ({
-  carpetSize: valueFrom(
-    [/carpet size/i, /floor area/i, /internal area/i],
-    [/(?:carpet size|floor area|internal area)\s*[:-]?\s*([\d,.]+\s*(?:m2|m\u00b2|sqm|sq m))/i],
-  ),
-  buildingSize: valueFrom(
-    [/build(?:ing)? size/i, /building area/i, /land size/i, /property size/i],
-    [/(?:build(?:ing)? size|building area|land size|property size)\s*[:-]?\s*([\d,.]+\s*(?:m2|m\u00b2|sqm|sq m))/i],
-  ),
-  bedrooms: valueFrom([/bedrooms?/i, /\bbeds?\b/i], [/(?:bedrooms?|beds?)\s*[:-]?\s*(\d+)/i, /(\d+)\s*beds?\b/i]),
-  bathrooms: valueFrom([/bathrooms?/i, /\bbaths?\b/i], [/(?:bathrooms?|baths?)\s*[:-]?\s*(\d+)/i, /(\d+)\s*baths?\b/i]),
-  parking: valueFrom(
-    [/parking/i, /car spaces?/i, /garage/i],
-    [/(?:parking|car spaces?|garage)\s*[:-]?\s*(\d+)/i, /(\d+)\s*(?:car spaces?|parking|garage)/i],
-  ),
-  estimatedCost: valueFrom(
-    [/estimated value/i, /estimated cost/i, /property value/i, /value estimate/i],
-    [/(?:estimated value|estimated cost|property value|value estimate)\s*[:-]?\s*(\$[\d,.]+(?:\s*-\s*\$[\d,.]+)?)/i],
-  ),
-  buildYear: valueFrom([/year built/i, /build year/i, /built/i], [/(?:year built|build year|built)\s*[:-]?\s*(\d{4})/i]),
-  propertyBoundary: valueFrom(
-    [/property boundary/i, /boundary/i],
-    [/(?:property boundary|boundary)\s*[:-]?\s*([^.!?]{3,80})/i],
-  ),
-  governmentPlanningOverlays: valueFrom(
-    [/government planning overlays/i, /planning overlays/i, /overlays/i],
-    [/(?:government planning overlays|planning overlays|overlays)\s*[:-]?\s*([^.!?]{3,120})/i],
-  ),
-  rawFields: extractRawFields(),
-  capturedAt: Date.now(),
-})
 
 const getStoredProperties = () =>
   new Promise<StoredProperty[]>((resolve) => {
@@ -270,7 +244,7 @@ const collectPropertyProfile = () => {
     url,
     savedAt: Date.now(),
     sources: {
-      propertyCom: extractPropertyComDetails(),
+      propertyCom: scrapePropertyCom(),
     },
   })
 }
