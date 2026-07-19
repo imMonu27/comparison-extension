@@ -212,7 +212,7 @@ const saveProperty = async (property: StoredProperty) => {
   })
 }
 
-const collectPropertyProfile = () => {
+const collectPropertyProfile = async () => {
   if (!isPropertyComPage()) {
     debugLog('skipped capture: not property.com.au', { host: location.hostname })
     return
@@ -237,16 +237,18 @@ const collectPropertyProfile = () => {
     return
   }
 
-  void saveProperty({
+  const property = await scrapePropertyCom();
+
+await saveProperty({
     id: makeId(address || url),
     title,
     address,
     url,
     savedAt: Date.now(),
     sources: {
-      propertyCom: scrapePropertyCom(),
+        propertyCom: property,
     },
-  })
+});
 }
 
 let collectTimer: number | undefined

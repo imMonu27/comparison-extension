@@ -130,8 +130,8 @@ function scrapeBoundaryPolygon() {
 async function captureBoundaryMap() {
 
     const map = document.querySelector(
-        'section[aria-label="Property boundary"]'
-    ) as HTMLElement;
+        '[data-testid="property-map-container"]'
+      ) as HTMLElement;
 
     if (!map) {
         console.log("Map not found");
@@ -170,7 +170,7 @@ async function captureBoundaryMap() {
 
 }
 
-export function scrapePropertyCom(): PropertyComDetails {
+export async function scrapePropertyCom(): Promise<PropertyComDetails> {
 
     const valuationSection =
     document.querySelector(
@@ -189,6 +189,10 @@ const rentalEstimate =
     subSections?.[1]
         ? scrapeRental(subSections[1])
         : undefined
+
+        const boundaryImage = await captureBoundaryMap();
+
+console.log("Captured Image:", boundaryImage);
 
     return {
 
@@ -212,7 +216,7 @@ const rentalEstimate =
             
 
         propertyBoundary: {
-            image: undefined
+            image: boundaryImage
         },
 
         governmentPlanningOverlays:governmentOverlays(),

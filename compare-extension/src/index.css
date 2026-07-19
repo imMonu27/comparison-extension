@@ -321,7 +321,7 @@ span{
 
 .boundary-card{
 
-  margin-top:20px;
+  margin-top:1px;
 
   background:white;
 
@@ -382,7 +382,7 @@ span{
 .boundary-header{
     padding:12px 16px;
     border-bottom:1px solid #eee;
-    font-weight:600;
+    font-weight:500;
 }
 
 .boundary-image{

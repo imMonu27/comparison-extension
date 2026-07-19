@@ -176,7 +176,7 @@ const saveProperty = async (property) => {
 		});
 	});
 };
-const collectPropertyProfile = () => {
+const collectPropertyProfile = async () => {
 	if (!isPropertyComPage()) {
 		debugLog("skipped capture: not property.com.au", { host: location.hostname });
 		return;
@@ -197,13 +197,14 @@ const collectPropertyProfile = () => {
 		debugLog("skipped capture: missing address after readiness check", { url });
 		return;
 	}
-	void saveProperty({
+	const property = await scrapePropertyCom();
+	await saveProperty({
 		id: makeId(address || url),
 		title,
 		address,
 		url,
 		savedAt: Date.now(),
-		sources: { propertyCom: scrapePropertyCom() }
+		sources: { propertyCom: property }
 	});
 };
 let collectTimer;
